@@ -32,3 +32,7 @@ int canMove(Tetromino *piece, int dx, int dy);
 
 // 실제 이동
 void movePiece(Tetromino *piece, int dx, int dy);
+// 회전
+void rotatePiece(Tetromino *piece);
+// 줄 삭제
+void clearLines();
