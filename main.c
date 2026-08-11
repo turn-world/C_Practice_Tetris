@@ -40,76 +40,100 @@ int shapes[7][4][4] = {
 
 int main()
 {
-    SetConsoleOutputCP(65001);  // UTF-8
+    SetConsoleOutputCP(65001);  // 콘솔 출력 UTF-8 설정 (한글/특수문자 깨짐 방지)
 
-    srand(time(NULL));   // 랜덤 시드
+    srand(time(NULL));   // 랜덤 시드 초기화 (매 실행마다 다른 블록 생성)
 
     Tetromino current;
-    memcpy(current.shape, shapes[0], sizeof(shapes[0])); // I블록
-    current.color = 9;   // 파란색
-    current.x = 3;       // 가로 중앙 근처
-    current.y = 0;       // 맨 위에서 시작
-    drawPiece(&current);
-    drawBoard();
+    memcpy(current.shape, shapes[0], sizeof(shapes[0])); // 초기 블록: I 블록 복사
+    current.color = 9;   // 블록 색상 설정 (파란색)
+    current.x = 3;       // 시작 위치 (가로 중앙 근처)
+    current.y = 0;       // 시작 위치 (맨 위)
+    
+    drawPiece(&current); // 현재 블록 화면에 출력
+    drawBoard();         // 보드 상태 출력
 
-    DWORD lastTime = GetTickCount();
+    DWORD lastTime = GetTickCount(); // 마지막 시간 저장 (자동 낙하용)
 
     while(1)
     {
-        // 1. 입력 처리
-        if(kbhit())
+        // ---------------------------
+        // 1. 키보드 입력 처리
+        // ---------------------------
+        if(kbhit())  // 키 입력이 있으면
         {
-        int key = getch();
-            if(key == 224)
+            int key = getch();
+
+            if(key == 224)  // 방향키 입력 (확장 키)
             {
-                key = getch();
-                erasePiece(&current);   // 먼저 지우고
+                key = getch(); // 실제 방향키 값 읽기
+                erasePiece(&current);   // 이동 전 현재 블록 지우기
+
+                // 왼쪽 이동
                 if(key == 75 && canMove(&current, -1, 0)) current.x--;
+                // 오른쪽 이동
                 else if(key == 77 && canMove(&current,  1, 0)) current.x++;
+                // 아래 이동 (소프트 드롭)
                 else if(key == 80 && canMove(&current,  0, 1)) current.y++;
-                drawPiece(&current);    // 다시 그리기
+
+                drawPiece(&current);    // 이동 후 다시 그리기
             }
+            // 스페이스바 → 회전
             else if(key == 32)
             {
-                erasePiece(&current);
-                rotatePiece(&current);
+                erasePiece(&current);   // 회전 전 지우기
+                rotatePiece(&current);  // 블록 회전
+                drawPiece(&current);    // 다시 출력
+            }
+
+            drawBoard(); // 보드 갱신
+        }
+
+        // ---------------------------
+        // 2. 시간 기반 자동 낙하 처리
+        // ---------------------------
+        if(GetTickCount() - lastTime > 500) // 0.5초마다 실행
+        {
+            lastTime = GetTickCount(); // 시간 갱신
+            erasePiece(&current);      // 이동 전 블록 제거
+
+            if(canMove(&current, 0, 1)) // 아래로 이동 가능하면
+            {
+                current.y++;           // 한 칸 아래로 이동
                 drawPiece(&current);
             }
-            drawBoard();
-        }
-        // 2. 시간 처리 (블록 자동 낙하)
-        if(GetTickCount() - lastTime > 500)
-        {
-            lastTime = GetTickCount();
-            erasePiece(&current);   // 추가
-        if(canMove(&current, 0, 1))
-        {
-            current.y++;
-            drawPiece(&current);
-        }
-        else
-        {
-            drawPiece(&current);  // 고정
-            clearLines();
-                // 새 블록 생성
-            memcpy(current.shape, shapes[rand() % 7], sizeof(shapes[0]));
-            current.color = (rand() % 6) + 9;
-            current.x = 3;
-            current.y = 0;
+            else // 더 이상 내려갈 수 없으면
+            {
+                drawPiece(&current);   // 현재 위치에 고정
 
-                // 새 블록도 못 놓으면 게임오버
+                clearLines();          // 꽉 찬 줄 제거
+
+                // ---------------------------
+                // 새로운 블록 생성
+                // ---------------------------
+                memcpy(current.shape, shapes[rand() % 7], sizeof(shapes[0])); // 랜덤 블록
+                current.color = (rand() % 6) + 9; // 랜덤 색상
+                current.x = 3;
+                current.y = 0;
+
+                // 생성 위치에 블록이 이미 있으면 게임오버
                 if(!canMove(&current, 0, 0))
                 {
-                drawBoard();
-                gotoxy(5, 10);
-                printf("GAME OVER");
-                return 0;
+                    drawBoard();
+                    gotoxy(5, 10);
+                    printf("GAME OVER");
+                    return 0;
                 }
-            drawPiece(&current);
+
+                drawPiece(&current); // 새 블록 출력
+            }
+
+            drawBoard(); // 보드 갱신
         }
-            drawBoard();
-        }
-        // 3. 화면 갱신
+
+        // ---------------------------
+        // 3. (별도 처리 없음 - 루프 반복)
+        // ---------------------------
     }
 
     return 0;
